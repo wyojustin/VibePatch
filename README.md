@@ -6,10 +6,6 @@ Vibe Patches
 
 ![First Prompt Screenshot](docs/images/first_prompt.png)
 
-**Vibe Patch GUI:**
-
-![Vibe Patch GUI Screenshot](docs/images/vibe_patch_gui.png)
-
 Overview
 --------
 
