@@ -1,5 +1,3 @@
- Vibe Patches README body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; background-color: #f9f9f9; } h1, h2, h3 { color: #333; } pre { background-color: #f4f4f4; padding: 10px; border-left: 3px solid #ccc; overflow-x: auto; } code { font-family: Consolas, "Courier New", Courier, monospace; } ul { margin-left: 20px; } .section { margin-bottom: 30px; }
-
 Vibe Patches
 ============
 
