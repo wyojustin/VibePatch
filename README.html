@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vibe Patches README</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 20px;
+      background-color: #f9f9f9;
+    }
+    h1, h2, h3 {
+      color: #333;
+    }
+    pre {
+      background-color: #f4f4f4;
+      padding: 10px;
+      border-left: 3px solid #ccc;
+      overflow-x: auto;
+    }
+    code {
+      font-family: Consolas, "Courier New", Courier, monospace;
+    }
+    ul {
+      margin-left: 20px;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Vibe Patches</h1>
+
+  <div class="section">
+    <h2>Overview</h2>
+    <p>
+      Vibe Patches is a Python source file patching tool that applies incremental modifications to code blocks. It supports patching for:
+    </p>
+    <ul>
+      <li>Standalone functions</li>
+      <li>Methods within classes</li>
+      <li>Entire class definitions</li>
+      <li>Spyder-style cells (delimited by <code>#%%</code> markers)</li>
+    </ul>
+    <p>
+      The tool is built around precise AST-based parsing, ensuring that target blocks are identified accurately. It also provides robust backup &amp; revert capabilities.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>Features</h2>
+    <ul>
+      <li><strong>AST-Based Parsing:</strong> Accurately extracts code blocks for functions, methods, classes, and Spyder cells using Python's <code>ast</code> module.</li>
+      <li><strong>Flexible Patch Application:</strong> If the target block does not exist, new code is inserted or appended in the appropriate location.</li>
+      <li><strong>Backup &amp; Revert:</strong> A backup is created before any patch is applied and is stored in the <code>VibeBackups</code> directory (up to 100 backups retained). A revert command restores the latest backup.</li>
+      <li><strong>User-Friendly Interface:</strong> A simple tkinter GUI supports file opening, patch selection from a dropdown, editing patches while preserving formatting, and detailed output logging.</li>
+      <li><strong>Command-Line Support:</strong> You can launch the tool with a file argument, e.g., <code>python vibe_patch.py my_file.py</code>.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>File Structure</h2>
+    <pre>
+VibePatch/
+├── docs
+│   └── specification.html
+├── LICENSE
+├── README.html
+├── tests
+│   └── sample_vibe_test.py
+└── vibe_patch.py
+    </pre>
+  </div>
+
+  <div class="section">
+    <h2>Getting Started</h2>
+    <p>
+      1. Clone the Repository:
+    </p>
+    <pre>
+git clone git@github.com:wyojustin/VibePatch.git
+cd VibePatch
+    </pre>
+    <p>
+      2. Install Dependencies:  
+      Vibe Patches uses standard libraries (e.g., <code>tkinter</code>, <code>ast</code>), so no additional installation is required for Python 3.6+.
+    </p>
+    <p>
+      3. Run the Application:
+    </p>
+    <pre>
+python vibe_patch.py
+    </pre>
+    <p>
+      To open a file directly from the command line:
+    </p>
+    <pre>
+python vibe_patch.py path/to/your_file.py
+    </pre>
+  </div>
+
+  <div class="section">
+    <h2>Usage</h2>
+    <ul>
+      <li>Click the <strong>Open</strong> button to load a Python file.</li>
+      <li>Select a patchable item from the dropdown list.</li>
+      <li>Edit the patch text in the patch area.</li>
+      <li>Click <strong>Apply Patch</strong> to update the file or <strong>Revert</strong> to roll back to the latest backup.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Canonical Patch Examples</h2>
+    
+    <h3>Example 1: Altering a Function</h3>
+    <p><strong>Original Function:</strong></p>
+    <pre><code class="language-python">
+def hello_world():
+    """
+    A simple function that prints a greeting?
+    """
+    print("Hello, world!")
+    </code></pre>
+    <p><strong>Vibe Patch to Update the Function:</strong></p>
+    <pre><code class="language-python">
+def hello_world():
+    """
+    A simple function that prints a greeting.
+    Updated to greet the universe.
+    """
+    print("Hello, universe!")
+    </code></pre>
+    
+    <h3>Example 2: Altering a Method</h3>
+    <p><strong>Original in class <code>Greeter</code>:</strong></p>
+    <pre><code class="language-python">
+def greet(self, name):
+    """
+    Greets a person by name.
+    """
+    print("Hello, " + name + "!")
+    </code></pre>
+    <p><strong>Vibe Patch to Update the Method:</strong></p>
+    <pre><code class="language-python">
+def Greeter.greet(self, name):
+    """
+    Greets a person by name.
+    Updated greeting message.
+    """
+    print("Hi, " + name + "! Welcome!")
+    </code></pre>
+    
+    <h3>Example 3: Adding a New Method</h3>
+    <p>
+      If a method does not exist, apply a patch that inserts it at the end of the class with a blank line preceding it.
+    </p>
+    <p><strong>Vibe Patch to Add a Method to <code>Greeter</code>:</strong></p>
+    <pre><code class="language-python">
+def Greeter.say_hi(self):
+    """
+    Says hi to the person.
+    """
+    print("Hi there!")
+    </code></pre>
+    
+    <h3>Example 4: Altering a Class</h3>
+    <p><strong>Original class <code>Calculator</code>:</strong></p>
+    <pre><code class="language-python">
+class Calculator:
+    def multiply(self, a, b):
+        return a * b
+
+    def divide(self, a, b):
+        if b != 0:
+            return a / b
+        else:
+            raise ValueError("Division by zero is not allowed!")
+    </code></pre>
+    <p><strong>Vibe Patch to Update the Class:</strong></p>
+    <pre><code class="language-python">
+class Calculator:
+    """
+    A class that provides basic calculator functions.
+    Updated version: includes exponentiation.
+    """
+    
+    def multiply(self, a, b):
+        return a * b
+
+    def divide(self, a, b):
+        if b == 0:
+            raise ZeroDivisionError("Cannot divide by zero!")
+        return a / b
+
+    def power(self, a, b):
+        return a ** b
+    </code></pre>
+    
+    <h3>Example 5: Adding a New Class</h3>
+    <p><strong>Vibe Patch to Add a New Class <code>Logger</code>:</strong></p>
+    <pre><code class="language-python">
+class Logger:
+    """
+    A simple logger class to demonstrate adding a new class.
+    """
+    
+    def log(self, message):
+        print("LOG:", message)
+    </code></pre>
+    
+    <h3>Example 6: Patching a Spyder Cell</h3>
+    <p>
+      Spyder cells are delimited by <code>#%%</code> markers. A patch targeting a Spyder cell replaces only the cell body (while preserving the marker) unless a new marker is provided.
+    </p>
+    <p><strong>Original Spyder Cell (Cell 0):</strong></p>
+    <pre><code class="language-python">
+#%% Cell 0: Functions and Setup
+
+def hello_world():
+    print("Hello, world!")
+
+def add_numbers(x, y):
+    return x + y
+    </code></pre>
+    <p><strong>Vibe Patch to Append New
