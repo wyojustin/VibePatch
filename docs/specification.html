@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vibe Patches Specification (Updated)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f9f9f9;
+      line-height: 1.6;
+    }
+    h1, h2, h3 {
+      color: #333;
+    }
+    pre {
+      background-color: #eee;
+      padding: 10px;
+      border-left: 3px solid #ccc;
+      overflow-x: auto;
+    }
+    code {
+      font-family: Consolas, monospace;
+    }
+    .section {
+      margin-bottom: 25px;
+      padding: 15px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+    }
+    .note {
+      background-color: #fffae6;
+      border: 1px dashed #cc9900;
+      padding: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Vibe Patches Specification (Updated)</h1>
+
+  <div class="section">
+    <h2>1. Overview and Objectives</h2>
+    <p>
+      <strong>Vibe Patches</strong> is a Python source file patching tool that applies incremental modifications to code blocks. Its targets include:
+    </p>
+    <ul>
+      <li>Standalone functions</li>
+      <li>Methods within classes</li>
+      <li>Entire class definitions</li>
+      <li>Spyder-style cells (delimited by <code>#%%</code> markers)</li>
+    </ul>
+    <p>
+      Key objectives are zero-shot reliability, accurate AST-based parsing, flexible insertion rules, robust error handling, and user-friendly backup &amp; revert capabilities.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>2. System Architecture</h2>
+    <h3>2.1 Patching Engine</h3>
+    <ul>
+      <li>
+        <strong>AST-Based Parsing:</strong>
+        Uses Python’s <code>ast</code> module to extract code blocks (functions, methods, classes, and Spyder cells) with precise annotations.
+      </li>
+      <li>
+        <strong>Spyder Cell Handling:</strong>
+        Detects cells by scanning for <code>#%%</code> markers and defines cell boundaries from one marker to the next (or EOF).
+      </li>
+      <li>
+        <strong>Patch Application:</strong>
+        Replaces a matching block exactly or appends new code in the appropriate location. The tool distinguishes whether to replace only the cell body or the entire cell based on patch content.
+      </li>
+    </ul>
+    
+    <h3>2.2 Backup and Revert</h3>
+    <ul>
+      <li>
+        <strong>Sequential Backups:</strong>
+        Backups are created before modifications and stored in a dedicated subdirectory (e.g., “VibeBackups”), sequentially numbered and retained up to a specified limit.
+      </li>
+      <li>
+        <strong>Revert Mechanism:</strong>
+        Users can revert to the most recent backup with clear error messaging if needed.
+      </li>
+    </ul>
+    
+    <h3>2.3 User Interface and Command-Line</h3>
+    <ul>
+      <li>
+        <strong>GUI:</strong> Offers file loading (via dialog or command-line), a dynamic dropdown of patchable items, a patch editor preserving formatting, and detailed logging.
+      </li>
+      <li>
+        <strong>Command-Line:</strong> Supports file path arguments with clear fallback error messages.
+      </li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>3. Patch Application Process</h2>
+    <h3>3.1 Extraction and Preparation</h3>
+    <ul>
+      <li>
+        <strong>AST Parsing and Cell Detection:</strong>
+        The tool extracts all target code blocks and Spyder cells (using <code>#%%</code> as delimiters).
+      </li>
+      <li>
+        <strong>Formatting and Header Verification:</strong>
+        New code is adjusted to preserve indentation and style. Regular expressions validate target names and adjust qualified names as necessary.
+      </li>
+    </ul>
+    
+    <h3>3.2 Insertion Rules</h3>
+    <ul>
+      <li>
+        <strong>Target Replacement:</strong>
+        If the block exists, the code is replaced exactly.
+      </li>
+      <li>
+        <strong>Insertion:</strong>
+        For non-existent blocks, new code is appended in an appropriate location (e.g., after the last function or method).
+      </li>
+      <li>
+        <strong>Spyder Cells:</strong>
+        Patches that do not introduce a new <code>#%%</code> marker only replace the cell body while keeping the original marker.
+      </li>
+    </ul>
+    
+    <h3>3.3 Error Handling</h3>
+    <ul>
+      <li>
+        Logs clear error messages if parsing fails, if target blocks are not found, or if inserted code disrupts formatting.
+      </li>
+      <li>
+        Provides user feedback via GUI and command-line logs.
+      </li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>4. Canonical Patch Examples</h2>
+    
+    <h3>4.1 Altering a Function</h3>
+    <p><strong>Original:</strong></p>
+    <pre>
+def hello_world():
+    """
+    A simple function that prints a greeting?
+    """
+    print("Hello, world!")
+    </pre>
+    <p><strong>Patch:</strong></p>
+    <pre>
+def hello_world():
+    """
+    A simple function that prints a greeting.
+    Updated to greet the universe.
+    """
+    print("Hello, universe!")
+    </pre>
+    
+    <h3>4.2 Altering a Method</h3>
+    <p><strong>Original in class <code>Greeter</code>:</strong></p>
+    <pre>
+def greet(self, name):
+    """
+    Greets a person by name. (first name only)
+    """
+    print("Hello, " + name + "!")
+    </pre>
+    <p><strong>Patch (note the class qualifier):</strong></p>
+    <pre>
+def Greeter.greet(self, name):
+    """
+    Greets a person by name.
+    Updated greeting message.
+    """
+    print("Hi, " + name + "! Welcome!")
+    </pre>
+    
+    <h3>4.3 Adding a Method</h3>
+    <p>
+      The new method must be inserted after the last existing method, with a blank line in between.
+      For example, if <code>Greeter</code> currently ends with <code>farewell</code>:
+    </p>
+    <pre>
+class Greeter:
+    def greet(self, name):
+        print("Hello, " + name + "!")
+        
+    def farewell(self, name):
+        print("Goodbye, " + name + "!")
+        
+    def say_hi(self):
+        """
+        Says hi to the person.
+        """
+        print("Hi there!")
+    </pre>
+    <p><strong>Patch to add <code>say_hi</code> (insertion must occur after the last method):</strong></p>
+    <pre>
+def Greeter.say_hi(self):
+    """
+    Says hi to the person.
+    """
+    print("Hi there!")
+    </pre>
+    
+    <h3>4.4 Altering a Class</h3>
+    <p><strong>Original class <code>Calculator</code>:</strong></p>
+    <pre>
+class Calculator:
+    def multiply(self, a, b):
+        return a * b
+
+    def divide(self, a, b):
+        if b != 0:
+            return a / b
+        else:
+            raise ValueError("Division by zero is not allowed!")
+    </pre>
+    <p><strong>Patch (replaces the entire class with an updated version):</strong></p>
+    <pre>
+class Calculator:
+    """
+    A class that provides basic calculator functions.
+    Updated version: includes exponentiation.
+    """
+    def multiply(self, a, b):
+        return a * b
+
+    def divide(self, a, b):
+        if b == 0:
+            raise ZeroDivisionError("Cannot divide by zero!")
+        return a / b
+
+    def power(self, a, b):
+        return a ** b
+    </pre>
+    
+    <h3>4.5 Adding a Class</h3>
+    <p><strong>Patch to add a new class <code>Logger</code>:</strong></p>
+    <pre>
+class Logger:
+    """
+    A simple logger class to demonstrate adding a new class.
+    """
+    def log(self, message):
+        print("LOG:", message)
+    </pre>
+    <p class="note">
+      <strong>Important:</strong> When patching to add a new class, if you intend for the class to be integrated into an existing code block rather than creating a new Spyder cell, <em>do not</em> include any <code>#%%</code> cell marker at the beginning of the patch. Including a marker will create a new cell.
+    </p>
+    
+    <h3>4.6 Patching a Spyder Cell</h3>
+    <p>
+      Spyder cells are identified by <code>#%%</code> markers. The Vibe Patch system replaces the <strong>entire cell body</strong> (while preserving the marker).
+      This means that if you wish to append new code to an existing cell rather than replacing it entirely, your patch must include both the original cell content alongside your additions.
+    </p>
+    <div class="note">
+      <strong>Lesson Learned:</strong> To append code to a Spyder cell, explicitly include all current cell content alongside the new code in your patch. Omitting the original content will result in a complete replacement rather than an append.
+    </div>
+    <p>
+      For example, consider Cell 0 originally contains:
+    </p>
+    <pre>
+#%% Cell 0: Functions and Setup
+
+def hello_world():
+    print("Hello, world!")
+    </pre>
+    <p>
+      To append additional functions while preserving the existing code, your patch should be:
+    </p>
+    <pre>
+#%% Cell 0: Functions and Setup (Cell 0)
+
+def hello_world():
+    print("Hello, world!")
+
+def add_numbers(x, y):
+    return x + y
+
+def subtract_numbers(x, y):
+    return x - y
+
+def eatme():
+    print("Time to eat! Enjoy your meal.")
+
+def drinkme():
+    print("Time to drink! Cheers!")
+    </pre>
+    
+  </div>
+
+  <div class="section">
+    <h2>5. Testing, Validation, and Version Control</h2>
+    <ul>
+      <li>
+        <strong>Automated Testing:</strong> Validate that AST parsing correctly identifies all code blocks and that patches are applied without altering formatting.
+      </li>
+      <li>
+        <strong>GUI and CLI Verification:</strong> Ensure that the user interface reflects current file status and that error messages are clear.
+      </li>
+      <li>
+        <strong>Versioning:</strong> Maintain a changelog and version control within the documentation for easy rollback if needed.
+      </li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>6. Conclusion</h2>
+    <p>
+      This updated specification streamlines the Vibe Patches system by focusing on essential guidelines, clear examples, and incorporating lessons learned from real-world usage—especially regarding Spyder cell updates and patch content. By following these instructions, other AI systems and developers can generate accurate, context-aware patches that maintain consistent code style and ensure robust file modifications.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>7. AI Partnership and Interaction Guidelines</h2>
+    <h3>7.1 Comprehensive Documentation and Examples for AI Scenarios</h3>
+    <p>
+      To aid AI partners in generating and validating patches reliably, it is critical to include:
+    </p>
+    <ul>
+      <li>
+        <strong>Detailed Code Context:</strong> Provide comprehensive documentation that outlines the intended functionality of each code block, including inline comments and usage examples.
+      </li>
+      <li>
+        <strong>Rich Example Patches:</strong> Supply examples covering common scenarios such as modifying asynchronous functions, handling type annotations, and updating dynamically generated code. This assists the AI partner in learning and applying consistent patching strategies.
+      </li>
+      <li>
+        <strong>Metadata and Annotations:</strong> Embed metadata—like function roles (utility, test, deprecated)—within the code to clarify the purpose of each block, enabling the AI to make informed decisions during patch generation.
+      </li>
+    </ul>
+    <p>
+      <em>Example:</em> For a function that requires modification, include before-and-after code samples with detailed change logs, ensuring the AI partner can learn the transformation process precisely.
+    </p>
+
+    <h3>7.2 User-AI Interaction Guidelines</h3>
+    <p>
+      To maximize the effectiveness of AI-assisted patching, developers and AI partners should adhere to the following guidelines:
+    </p>
+    <ul>
+      <li>
+        <strong>Clear Command Syntax:</strong> Users should structure patch requests with unambiguous commands, such as "add a new method" or "remove this function," thereby minimizing misinterpretation.
+      </li>
+      <li>
+        <strong>Contextual Communication:</strong> When possible, include contextual details (e.g., file name, cell number, class name) so that the AI partner can correctly identify the target code block.
+      </li>
+      <li>
+        <strong>Iterative Feedback:</strong> Encourage a conversational loop where the AI provides previews or summaries of changes for human verification before final application.
+      </li>
+      <li>
+        <strong>Documented Changes:</strong> Embed descriptive comments within patches explaining the changes. This improves clarity for both human reviewers and the AI’s contextual understanding.
+      </li>
+    </ul>
+    <p>
+      These guidelines ensure a smooth collaboration between developers and AI partners, enabling efficient and error-free patch generation.
+    </p>
+  </div>
+
+</body>
+</html>
